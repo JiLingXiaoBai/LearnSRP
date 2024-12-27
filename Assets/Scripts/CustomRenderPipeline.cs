@@ -16,7 +16,6 @@ public class CustomRenderPipeline : RenderPipeline
         //清除上一帧绘制的东西
         cmd.ClearRenderTarget(true, true, m_Asset.clearColor);
         context.ExecuteCommandBuffer(cmd);
-        cmd.Release();
 
         // 会有显示Scene视图的SceneCamera，点击Camera时显示Preview视图的PreviewCamera，以及场景中我们添加的Camera
         foreach (var camera in cameras)
@@ -34,17 +33,17 @@ public class CustomRenderPipeline : RenderPipeline
 
             //生成FilteringSettings
             FilteringSettings filteringSettings = FilteringSettings.defaultValue;
-            // var renderListParam = new RendererListParams(cullingResults, drawingSettings, filteringSettings);
-            // RendererList rendererList = context.CreateRendererList(ref renderListParam);
-            // var cmd2 = new CommandBuffer();
-            // cmd2.DrawRendererList(rendererList);
-            // cmd2.Release();
-            context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
+            var renderListParam = new RendererListParams(cullingResults, drawingSettings, filteringSettings);
+            RendererList rendererList = context.CreateRendererList(ref renderListParam);
+            cmd.DrawRendererList(rendererList);
             if (camera.clearFlags == CameraClearFlags.Skybox && RenderSettings.skybox != null)
             {
                 //绘制天空盒
-                context.DrawSkybox(camera);
+                var skyBoxRenderList = context.CreateSkyboxRendererList(camera);
+                cmd.DrawRendererList(skyBoxRenderList);
             }
+            context.ExecuteCommandBuffer(cmd);
+            cmd.Release();
             context.Submit();
         }
     }
