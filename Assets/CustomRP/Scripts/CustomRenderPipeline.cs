@@ -15,7 +15,6 @@ public class CustomRenderPipeline : RenderPipeline
         var cmd = new CommandBuffer();
         //清除上一帧绘制的东西
         cmd.ClearRenderTarget(true, true, m_Asset.clearColor);
-        context.ExecuteCommandBuffer(cmd);
 
         // 会有显示Scene视图的SceneCamera，点击Camera时显示Preview视图的PreviewCamera，以及场景中我们添加的Camera
         foreach (var camera in cameras)
