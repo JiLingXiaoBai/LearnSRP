@@ -6,6 +6,9 @@ public class ToyRenderPipeline : RenderPipeline
     private RenderTexture _gDepth;
     private RenderTexture[] _gBuffers = new RenderTexture[4];
     private RenderTargetIdentifier[] _gBufferIds = new RenderTargetIdentifier[4];
+    public Cubemap diffuseIBL;
+    public Cubemap specularIBL;
+    public Texture brdfLut;
 
     public ToyRenderPipeline()
     {
@@ -45,6 +48,16 @@ public class ToyRenderPipeline : RenderPipeline
         var cmd = new CommandBuffer();
         cmd.name = "gBuffer";
 
+        var viewMatrix = camera.worldToCameraMatrix;
+        var projMatrix = GL.GetGPUProjectionMatrix(camera.projectionMatrix, false);
+        var vpMatrix = projMatrix * viewMatrix;
+        var vpMatrixInv = vpMatrix.inverse;
+        cmd.SetGlobalMatrix("_vpMatrix", vpMatrix);
+        cmd.SetGlobalMatrix("_vpMatrixInv", vpMatrixInv);
+        cmd.SetGlobalTexture("_diffuseIBL", diffuseIBL);
+        cmd.SetGlobalTexture("_specularIBL", specularIBL);
+        cmd.SetGlobalTexture("_brdfLut", brdfLut);
+        
         cmd.SetRenderTarget(_gBufferIds, _gDepth);
         cmd.SetGlobalTexture("_gDepth", _gDepth);
         for (int i = 0; i < 4; i++)
@@ -63,12 +76,14 @@ public class ToyRenderPipeline : RenderPipeline
         var sortingSettings = new SortingSettings(camera);
         var drawingSettings = new DrawingSettings(shaderTagId, sortingSettings);
         var filteringSettings = FilteringSettings.defaultValue;
+        
 
         // draw
         var renderListParam = new RendererListParams(cullResults, drawingSettings, filteringSettings);
         var rendererList = context.CreateRendererList(ref renderListParam);
         cmd.DrawRendererList(rendererList);
 
+        LightPass(context,camera);
         var skyBoxRenderList = context.CreateSkyboxRendererList(camera);
         cmd.DrawRendererList(skyBoxRenderList);
 #if UNITY_EDITOR
